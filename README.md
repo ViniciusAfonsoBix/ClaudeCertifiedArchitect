@@ -8,6 +8,7 @@ This repository contains a lightweight, self-contained study companion for the C
   - exam mental-model guidance
   - a compact cheatsheet
   - a topic-by-topic summary
+  - a flash cards mode for concept review: a curated deck of concept cards based on the claudecertificationguide.com study guide (not the raw quiz questions) — the front asks a conceptual question, the back reveals the key idea plus a didactic explanation and a link to the relevant guide page; study by one, several, or all themes, mark cards as "já sei"/"revisar" and re-study just the ones flagged for review
   - an interactive quiz simulator
 - [questions_raw.json](questions_raw.json): raw question dataset
 - [questions_final.json](questions_final.json): finalized data used for the study experience

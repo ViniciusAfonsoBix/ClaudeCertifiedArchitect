@@ -104,7 +104,30 @@ details.tema .body{padding:0 20px 18px;border-top:1px solid var(--border)}
 .dombar .val{width:70px;text-align:right;font-size:.85rem;color:var(--muted)}
 .review-item{border-left:3px solid var(--red);padding:10px 14px;margin:12px 0;background:var(--surface2);border-radius:0 8px 8px 0;font-size:.9rem}
 .center{text-align:center}
-@media(max-width:600px){.pyr1,.pyr2,.pyr3{width:100%}.dombar .lbl{width:120px}}
+/* ---- Flash Cards ---- */
+.optrow button.sel-multi{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.flip-scene{perspective:1600px;margin:18px 0 8px}
+.flip-card{position:relative;width:100%;min-height:340px;cursor:pointer;transition:transform .5s;transform-style:preserve-3d}
+.flip-card.flipped{transform:rotateY(180deg)}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border:1px solid var(--border);border-radius:var(--radius);padding:26px 24px;background:var(--surface);display:flex;flex-direction:column}
+.flip-face.back{transform:rotateY(180deg);background:var(--surface2)}
+.flip-face .fc-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.flip-face.back .fc-label{color:var(--green)}
+.fc-q{font-size:1.05rem;line-height:1.5;white-space:pre-wrap;flex:1}
+.fc-ans{font-size:1.02rem;font-weight:700;color:var(--green);margin-bottom:12px;line-height:1.45}
+.fc-ans .letter{color:var(--green);font-weight:800;margin-right:6px}
+.fc-rat{font-size:.92rem;color:var(--text);line-height:1.5;white-space:pre-wrap;overflow:auto}
+.fc-hint{text-align:center;font-size:.8rem;color:var(--muted);margin-top:8px}
+.fc-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+.fc-arrow{background:var(--surface2);border:1px solid var(--border);color:var(--text);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.2rem;line-height:1}
+.fc-arrow:hover:not(:disabled){border-color:var(--accent);color:var(--accent2)}
+.fc-arrow:disabled{opacity:.35;cursor:default}
+.fc-mark{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.fc-mark button{border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:9px 18px;border-radius:999px;cursor:pointer;font-size:.9rem;font-weight:600}
+.fc-mark .know{border-color:#2f4d38}
+.fc-mark .know:hover,.fc-mark .know.on{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.fc-mark .review:hover,.fc-mark .review.on{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+@media(max-width:600px){.pyr1,.pyr2,.pyr3{width:100%}.dombar .lbl{width:120px}.flip-card{min-height:400px}}
 </style>
 </head>
 <body>
@@ -119,6 +142,7 @@ details.tema .body{padding:0 20px 18px;border-top:1px solid var(--border)}
   <button class="active" data-tab="mental">🧠 Modelo Mental</button>
   <button data-tab="cheat">⚡ Cheatsheet</button>
   <button data-tab="temas">📚 Resumo por Tema</button>
+  <button data-tab="flash">🃏 Flash Cards</button>
   <button data-tab="sim">🎯 Simulado</button>
 </nav>
 
@@ -291,6 +315,73 @@ details.tema .body{padding:0 20px 18px;border-top:1px solid var(--border)}
   <div id="temas-list"></div>
 </div>
 
+<!-- ============ FLASH CARDS ============ -->
+<div class="tab" id="tab-flash">
+  <div id="fc-setup" class="card setup">
+    <h3 style="margin-top:0">🃏 Configurar flash cards</h3>
+    <p class="muted small" style="margin-bottom:4px">Cartões de <b>revisão de conceitos</b> do guia <a href="https://claudecertificationguide.com/learn" target="_blank" style="color:var(--accent2)">claudecertificationguide.com</a>. Frente: uma pergunta conceitual. Verso: a ideia-chave + explicação didática. Selecione um ou mais temas (ou todos).</p>
+    <label>Temas</label>
+    <div class="optrow" id="fc-dom">
+      <button data-v="all" class="sel-multi">Todos</button>
+      <button data-v="D1">D1 Agentes</button>
+      <button data-v="D2">D2 Tools/MCP</button>
+      <button data-v="D3">D3 Claude Code</button>
+      <button data-v="D4">D4 Prompt/Output</button>
+      <button data-v="D5">D5 Contexto</button>
+    </div>
+    <label>Ordem</label>
+    <div class="optrow" id="fc-order">
+      <button data-v="seq" class="sel">📖 Didática (sequencial)</button>
+      <button data-v="shuffle">🔀 Embaralhado</button>
+    </div>
+    <div id="fc-count" class="small muted" style="margin-top:16px"></div>
+    <button class="btn-primary" onclick="startFlash()">Começar →</button>
+  </div>
+
+  <div id="fc-study" style="display:none">
+    <div class="progressbar"><div id="fc-prog"></div></div>
+    <div class="qmeta" style="margin-bottom:6px">
+      <span id="fc-counter" class="muted small"></span>
+      <span id="fc-domtag"></span>
+    </div>
+    <div class="flip-scene">
+      <div class="flip-card" id="fc-card" onclick="flipCard()">
+        <div class="flip-face front">
+          <div class="fc-label" id="fc-front-label">Conceito</div>
+          <div class="fc-q" id="fc-front"></div>
+        </div>
+        <div class="flip-face back">
+          <div class="fc-label">Ideia-chave</div>
+          <div class="fc-ans" id="fc-back-ans"></div>
+          <div class="fc-rat" id="fc-back-rat"></div>
+          <div class="small" style="margin-top:12px"><a id="fc-back-link" href="#" target="_blank" onclick="event.stopPropagation()">→ Aprofundar este tema no site</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-hint" id="fc-hint">Clique no card para virar</div>
+    <div class="fc-mark">
+      <button class="know" id="fc-know" onclick="event.stopPropagation();markCard('know')">✓ Já sei</button>
+      <button class="review" id="fc-review" onclick="event.stopPropagation();markCard('review')">↻ Revisar</button>
+    </div>
+    <div class="fc-nav">
+      <button class="fc-arrow" id="fc-prev" onclick="navCard(-1)">‹</button>
+      <button class="fc-arrow" id="fc-next" onclick="navCard(1)">›</button>
+    </div>
+    <div class="center"><button class="btn-ghost" onclick="quitFlash()">✕ Encerrar</button></div>
+  </div>
+
+  <div id="fc-result" style="display:none">
+    <div class="card center">
+      <div class="score-big" id="fc-res-score"></div>
+      <div class="score-sub" id="fc-res-sub"></div>
+      <div class="center" style="margin-top:20px">
+        <button class="btn-primary" id="fc-res-again" style="margin-right:8px"></button>
+        <button class="btn-ghost" onclick="quitFlash()">Novo baralho</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ SIMULADO ============ -->
 <div class="tab" id="tab-sim">
   <div id="sim-setup" class="card setup">
@@ -432,7 +523,7 @@ const DOMS = {
 
 // ---------- Simulado ----------
 let cfg = {num:'20', dom:'all'};
-document.querySelectorAll('.optrow').forEach(row=>{
+document.querySelectorAll('#sim-setup .optrow').forEach(row=>{
   row.addEventListener('click', e=>{
     if(e.target.tagName!=='BUTTON') return;
     row.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
@@ -564,6 +655,189 @@ function renderHist(){
   }catch(e){}
 }
 renderHist();
+
+// ---------- Flash Cards ----------
+// Baralho de conceitos do guia claudecertificationguide.com/learn (não são as questões do simulado).
+// t = tópico · f = pergunta conceitual (frente) · k = ideia-chave · b = explicação didática (verso)
+const FLASHCARDS = [
+// ===== D1 · Arquitetura Agêntica & Orquestração =====
+{dom:"D1",t:"Loop agêntico",f:"O que decide se o loop agêntico continua ou para?",k:"O stop_reason controla o loop.",b:"end_turn → o modelo terminou, o loop para. tool_use → o agente executa a tool pedida e chama o modelo de novo. O cap de iterações é só um backstop de segurança contra loops infinitos — nunca o mecanismo de controle principal."},
+{dom:"D1",t:"Statelessness",f:"O modelo 'lembra' sozinho do que aconteceu nos turnos anteriores?",k:"Não — o modelo é stateless.",b:"Cada chamada à API reenvia a conversa inteira. O tool_result precisa ser anexado ao histórico antes da próxima chamada; se você não reenviar o histórico, o modelo literalmente 'esquece' tudo. Quem mantém estado é a sua aplicação, não o modelo."},
+{dom:"D1",t:"Contexto de subagentes",f:"Subagentes compartilham contexto entre si automaticamente?",k:"Não. Compartilhamento automático de contexto não existe.",b:"Cada subagente enxerga apenas o que o coordenador passa a ele na invocação. Se o subagente B precisa do resultado do A, o coordenador deve propagar esse resultado explicitamente. 'Message bus' ou 'memória compartilhada' como resposta é pegadinha clássica."},
+{dom:"D1",t:"Paralelismo",f:"Como reduzir a latência quando várias subtarefas são independentes?",k:"Invocar os subagentes em paralelo no mesmo turno.",b:"Subtarefas sem dependência entre si não precisam esperar uma pela outra. Rodando em paralelo, a latência total vira a do subagente mais lento — em vez da soma de todos."},
+{dom:"D1",t:"Tool Task",f:"O que é obrigatório para um agente conseguir criar subagentes?",k:"A tool Task presente em allowedTools.",b:"Prompt descrevendo delegação NÃO dá capacidade de delegar. Sem a tool Task, nada acontece — e o pior: não há erro, o agente simplesmente segue sem delegar. Sintoma típico: 'o coordenador nunca cria subagentes apesar do prompt mandar'."},
+{dom:"D1",t:"Agent SDK",f:"Qual é o padrão canônico do Agent SDK para montar especialistas?",k:"AgentDefinitions por especialista, com 4–5 tools escopadas cada.",b:"Cada especialista recebe só as tools do seu domínio. Isso melhora a seleção de tool (menos opções = menos confusão) e serve de guardrail estrutural: o que não está em allowedTools não pode ser feito."},
+{dom:"D1",t:"Delegação",f:"Como escrever uma boa instrução de delegação para um subagente?",k:"Objetivo + critérios de qualidade — nunca passos micro-gerenciados.",b:"Diga o quê e o padrão de qualidade esperado, e deixe o como para o subagente. Micro-gerenciar passos desperdiça a capacidade de raciocínio do modelo e quebra quando a realidade diverge do roteiro."},
+{dom:"D1",t:"Delegar vs fazer",f:"Quando o coordenador deve delegar e quando deve fazer direto?",k:"Grande ou poluidor de contexto → delega. Trivial → faz direto.",b:"Tarefas que geram muito conteúdo intermediário (exploração, leitura extensa) poluiriam o contexto do coordenador — delegue e receba só a conclusão. Tarefas triviais não justificam o overhead de um subagente. Query diversa e em evolução → o coordenador decide dinamicamente quem invocar."},
+{dom:"D1",t:"Guardrails",f:"Guardrail por instrução ou por estrutura — qual é mais confiável?",k:"Estrutural > instrução, sempre.",b:"Remover a tool de allowedTools garante 100%; 'não use essa tool' no prompt é probabilístico. Regra de aplicação obrigatória (AML, teto de refund, PII) exige hook PreToolUse/PostToolUse em código — enforcement determinístico fora do modelo."},
+{dom:"D1",t:"Sessões",f:"Como retomar um trabalho interrompido sem perder o que já foi feito?",k:"--resume retoma a sessão preservando o contexto.",b:"Recomeçar do zero joga fora todo o raciocínio acumulado. Retome com --resume e informe o que mudou desde então. Para explorar caminhos alternativos a partir do mesmo ponto, use fork_session — ramifica análises paralelas do mesmo baseline."},
+{dom:"D1",t:"Resiliência",f:"Como desenhar um pipeline multi-agente que sobrevive a crash?",k:"Cada agente persiste um relatório estruturado do que fez.",b:"Se o pipeline cai, o coordenador injeta os relatórios persistidos ao retomar — ninguém refaz trabalho já concluído. Estado em memória morre com o processo; estado estruturado em disco sobrevive."},
+// ===== D2 · Tool Design & Integração MCP =====
+{dom:"D2",t:"Seleção de tool",f:"Qual é o principal sinal que o modelo usa para escolher uma tool?",k:"A descrição da tool.",b:"Tool ignorada ou trocada pela errada? O primeiro e mais barato passo é sempre enriquecer as descrições: o que a tool retorna, quando usar, e a fronteira 'use esta vs aquela'. Router, classificador ou few-shot vêm depois — nunca antes."},
+{dom:"D2",t:"Keyword overlap",f:"Por que o modelo às vezes chama a tool errada de forma sistemática?",k:"Sobreposição de palavras entre instruções e nomes de tools.",b:"Se a instrução fala 'loop' e existe uma tool performance_check associada a loops, o modelo associa por keyword, não por semântica. Fix: reescrever instruções e descrições com terminologia distinta e não-sobreposta."},
+{dom:"D2",t:"Contratos",f:"Qual o problema de uma tool genérica com parâmetro de instrução livre?",k:"Sem contrato definido, o comportamento fica imprevisível.",b:"Divida em tools específicas, cada uma com contrato claro de entrada e saída. Tools específicas são mais fáceis de selecionar, validar e testar do que uma 'faz-tudo' guiada por texto livre."},
+{dom:"D2",t:"Erros estruturados",f:"Como reportar uma falha de tool para o modelo conseguir reagir?",k:"isError: true com a mensagem no conteúdo do tool result.",b:"O modelo só vê o que está no tool result — exceção lançada fora dele é invisível. Estruture: isError, mensagem explicando o que falhou, errorCategory e isRetryable. 'Operation failed' genérico não dá ao modelo material para decidir o próximo passo."},
+{dom:"D2",t:"Política de retry",f:"Toda falha de tool merece retry?",k:"Não — a classe do erro define a reação.",b:"Transiente (503, timeout, 429) → retry com backoff, respeitando retryAfterMs. Erro de negócio (política, licença) → nunca retry: repetir não muda a regra. Erro de validação (input malformado) → corrigir o input e tentar de novo. Retry idêntico para tudo é anti-padrão."},
+{dom:"D2",t:"Vazio válido",f:"'success com 0 resultados' é um erro que merece retry?",k:"Não — vazio válido é resposta legítima.",b:"Buscar e não encontrar é um resultado, não uma falha. O anti-padrão grave é o inverso: retornar 'ok + data:[]' quando houve falha de autenticação — o agente não consegue distinguir 'não existe' de 'não consegui acessar', e conclui errado com confiança."},
+{dom:"D2",t:"Escopo de tools",f:"Quantas tools um agente deve ter? E se precisar de 20+?",k:"4–7 por agente; 20+ dilui a seleção.",b:"Muitas tools competindo confundem a escolha. Se o domínio exige 20+, divida em agentes especialistas com subconjuntos escopados — cada um seleciona entre poucas opções relevantes."},
+{dom:"D2",t:"Config MCP",f:"Onde versionar a configuração MCP do time? E experimentos pessoais?",k:".mcp.json no repo (time) · ~/.claude.json (pessoal).",b:"O .mcp.json versionado distribui os servers do time via git, com code review. Experimentos individuais ficam no ~/.claude.json do usuário, sem poluir o repo."},
+{dom:"D2",t:"Built-in tools",f:"Achar uma string exata num repo grande e substituí-la com segurança — quais tools?",k:"Grep para localizar + Edit para substituição revisável.",b:"Grep encontra as ocorrências exatas; Edit faz a troca cirúrgica e auditável. Se o Edit falhar porque old_string não é único, expanda o contexto da busca até ficar único — nunca regenere o arquivo inteiro."},
+// ===== D3 · Claude Code: Configuração & Workflows =====
+{dom:"D3",t:"CLAUDE.md",f:"CLAUDE.md de projeto tem precedência garantida sobre o de usuário?",k:"Não — CLAUDE.md é orientação probabilística, sem precedência garantida.",b:"Nenhum nível 'vence' de forma determinística: tudo vira contexto que o modelo pondera. Regra que DEVE valer sempre não pertence ao CLAUDE.md — pertence a enforcement: hook ou settings.json."},
+{dom:"D3",t:"Regras vagas",f:"A regra 'inclua integration tests' no CLAUDE.md não está sendo seguida. Fix?",k:"Adicionar critérios concretos + um exemplo.",b:"Regra vaga produz comportamento vago. Especifique o que conta como integration test, quando é exigido e mostre um exemplo do padrão esperado. Instrução mensurável > adjetivo."},
+{dom:"D3",t:".claude/rules/",f:"Como carregar convenções só quando certos arquivos são tocados?",k:".claude/rules/ com frontmatter paths (globs).",b:"A regra só entra no contexto quando arquivos que casam com o glob são modificados — ideal para convenções de testes co-localizados ou IaC espalhada. CLAUDE.md por diretório não escala para 50+ diretórios; rules com globs escalam."},
+{dom:"D3",t:"Hooks",f:"Formatar código automaticamente após cada Write/Edit — qual hook?",k:"PostToolUse.",b:"PostToolUse roda depois da ação — perfeito para formatar/normalizar (Checkstyle, package naming). Para preservar o transcript antes de compactar, PreCompact. A verificação deve ocorrer no momento certo do fluxo: hook certo, evento certo."},
+{dom:"D3",t:"Plan mode",f:"Quando vale a pena usar plan mode?",k:"Complexidade alta, múltiplas estratégias válidas ou padronização antes de repetição.",b:"Dependências circulares, decisões arquiteturais com trade-offs, ou definir o padrão uma vez antes de aplicá-lo em N diretórios. Para tarefa simples e direta, plan mode só adiciona overhead."},
+{dom:"D3",t:"Skills do time",f:"Como distribuir skills para o time inteiro?",k:".claude/skills/ dentro do repo.",b:"O git distribui, versiona e permite code review das skills como qualquer código. Skill na máquina de um dev só existe para ele."},
+{dom:"D3",t:"git worktree",f:"Rodar várias instâncias do Claude Code em paralelo no mesmo repo — como?",k:"git worktree: diretório + branch isolados por instância.",b:"Cada worktree é uma pasta própria apontando para uma branch própria, no mesmo repo. Trocar branch na mesma pasta enquanto outra instância trabalha é receita para conflito e corrupção de estado."},
+{dom:"D3",t:"Gerar vs revisar",f:"Por que gerar e revisar na mesma sessão de CI/CD é um erro?",k:"Mesma sessão = viés de auto-confirmação.",b:"O revisor herda todo o raciocínio de quem gerou — e tende a concordar consigo mesmo. Cada etapa do pipeline (gerar, revisar, verificar) deve rodar em sessão isolada, recebendo apenas o artefato a avaliar. Use -p (headless); --output-format json vale por invocação."},
+{dom:"D3",t:"Falso positivo",f:"Uma categoria do review automático tem 40% de falso positivo. O que fazer?",k:"Desabilitar a categoria e refinar antes de reativar.",b:"Falso positivo em volume contamina a confiança no review inteiro — o time passa a ignorar tudo. Desligue a categoria ruidosa, refine com critérios concretos e exemplos, e só então reative."},
+// ===== D4 · Prompt Engineering & Saída Estruturada =====
+{dom:"D4",t:"Escada de correção",f:"O prompt já está detalhado e ainda erra. Qual é a escada de correção?",k:"Instruções → few-shot → mudança estrutural.",b:"Se instruções detalhadas saturaram, adicionar mais texto não resolve: passe para few-shot com 2–4 exemplos cobrindo exatamente os formatos que falham (com raciocínio). Se o problema é estrutural, mude o schema ou a arquitetura. E temperature 0 NÃO corrige entendimento errado — só reduz variância."},
+{dom:"D4",t:"tool_choice",f:"Como garantir saída estruturada em 100% das chamadas?",k:"tool_choice forçando a tool específica (nível API).",b:"É a única garantia real — prompt pedindo JSON é probabilístico. tool_choice também garante ordem quando uma etapa deve vir antes da outra (forçar extração antes do enriquecimento). A posição da tool no array NÃO prioriza nada."},
+{dom:"D4",t:"Schema honesto",f:"Como desenhar schema para campos que nem sempre existem no documento?",k:"Nullable — required força fabricação.",b:"Se o campo é required e o dado não existe, o modelo inventa. Marque nullable e instrua: 'não declarado = null'. Enum em evolução → inclua 'other' + campo detail. Campo emendado ao longo do tempo → múltiplos valores com vigência."},
+{dom:"D4",t:"Validação semântica",f:"O JSON veio válido. Acabou a validação?",k:"Não — valide semanticamente, não só o formato.",b:"Schema válido não garante conteúdo correto: cheque coerência, como calculated_total vs stated_total. Em pipelines, valide entre as etapas (não funda etapas para 'economizar' validação)."},
+{dom:"D4",t:"Retry informado",f:"A extração falhou na validação. Como fazer o retry?",k:"Retry informado: doc + extração falha + erro específico.",b:"Reenviar o mesmo prompt reproduz o mesmo erro. Inclua no retry o que veio errado e por quê, para o modelo corrigir. E distinga: erro recuperável → retry; dado ausente na fonte → não há retry que o crie — vai para revisão humana."},
+{dom:"D4",t:"Batch API",f:"Quando usar a Batch API — e quais são as regras do jogo?",k:"Fluxo tolerante a atraso → batch (50% de desconto, até 24h).",b:"Overnight e sem urgência → batch; bloqueante ou sensível a latência → tempo real. Regras: custom_id para correlacionar (ordem NÃO é garantida — nunca parseie por posição), reenviar só os itens falhos, dividir em chunks se estourar context_length. Deadline real = intervalo de disparo + 24h."},
+{dom:"D4",t:"Multi-pass",f:"Review de PR multi-arquivo vem raso e genérico. Fix?",k:"Um passe por arquivo + passe final de integração.",b:"Muitos arquivos num passe só diluem a atenção do modelo. Revise cada arquivo isoladamente e feche com um passe de integração entre eles. Votação com múltiplos passes idênticos só multiplica custo — não profundidade."},
+// ===== D5 · Gestão de Contexto & Confiabilidade =====
+{dom:"D5",t:"Orçamento de contexto",f:"Por que respostas ficam rasas em sessões longas?",k:"Contexto é aritmética: system + histórico + tool results ≈ limite.",b:"Quando a soma encosta no limite, sobra pouco espaço para raciocinar — a resposta degrada. Mitigação: sumarizar histórico, truncar tool results verbosos e compactar extraindo só os campos relevantes. Estruturado > prosa: datas, IDs e valores sobrevivem à compactação."},
+{dom:"D5",t:"Lost-in-the-middle",f:"O que é o efeito lost-in-the-middle e como mitigar?",k:"O meio de sequências longas perde fidelidade.",b:"Detalhes no meio do contexto viram 'various changes' — o modelo retém melhor início e fim. Mitigar: scratchpad persistente fora do contexto, /compact com resumo que preserva fatos críticos (renames, IDs, valores exatos) e subagentes de exploração que devolvem só conclusões."},
+{dom:"D5",t:"Exploração de codebase",f:"Como explorar um codebase gigante sem afogar o contexto?",k:"Modelo mental compacto primeiro, leitura direcionada depois.",b:"Comece pela classe base ou interface para entender a estrutura, depois leia só o necessário. Função exposta por wrappers → enumere todos os aliases antes do Grep. 800+ arquivos → subagentes paralelos, um por serviço, cada um devolvendo só o resumo."},
+{dom:"D5",t:"Escalada",f:"O cliente pediu explicitamente para falar com um humano. O que o agente faz?",k:"Escala imediatamente, com handoff estruturado.",b:"Pedido explícito de humano não se negocia — nem 'só mais uma tentativa'. O handoff leva: cliente, causa raiz, valor envolvido e ação recomendada, para o humano não recomeçar do zero. Caso já confirmado como resolvível → ofereça resolver agora ou escalar."},
+{dom:"D5",t:"Ambiguidade",f:"Três contas com o mesmo nome. O agente escolhe a mais provável?",k:"Nunca adivinha — pede um dado identificador.",b:"Escolher a conta 'mais recente' ou 'mais ativa' é chute com consequência. O custo de perguntar (e-mail, ID, CPF) é mínimo; o custo de agir na conta errada é alto. Ambiguidade em ação de risco → desambiguar antes de agir."},
+{dom:"D5",t:"Propagação de erro",f:"Uma fonte falhou no meio do pipeline de pesquisa. Suprimir e seguir?",k:"Nunca suprimir silenciosamente.",b:"Registre o erro de forma estruturada, prossiga com as fontes disponíveis e marque explicitamente as lacunas e a cobertura real no resultado. Resultado 'completo' que omite falhas é desinformação — o consumidor decide com dados errados."},
+{dom:"D5",t:"Proveniência",f:"Como garantir que cada afirmação seja rastreável até a fonte?",k:"Metadados estruturados viajam com cada claim.",b:"Fonte, página e data acompanham a afirmação por todo o pipeline — citação em prosa se perde no parsing. Conflito entre fontes em decisão de alto risco → apresente ambos com metadados e deixe o humano arbitrar. Série temporal ≠ contradição: dado antigo não é dado errado."},
+{dom:"D5",t:"Calibração",f:"O threshold de confiança validado continua válido para sempre?",k:"Não — calibração vale só na distribuição em que foi validada.",b:"Formato novo de documento invalida o threshold: revalide antes de confiar. Média agregada esconde segmentos ruins → valide por tipo e por campo. E mantenha amostragem estratificada por risco, contínua, inclusive nos auto-aprovados."}
+];
+FLASHCARDS.forEach((c,i)=>c.id=i+1);
+
+let fcCfg = {doms:['all'], order:'seq'};
+let deck=[], fi=0, fcMarks={};
+
+function fcPool(){
+  const all = fcCfg.doms.includes('all');
+  return FLASHCARDS.filter(c => all || fcCfg.doms.includes(c.dom));
+}
+function fcUpdateCount(){
+  document.getElementById('fc-count').textContent = `${fcPool().length} cards no baralho selecionado.`;
+}
+
+// seleção múltipla de temas
+document.getElementById('fc-dom').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  const v = e.target.dataset.v, row = e.target.parentElement;
+  if(v==='all'){
+    fcCfg.doms=['all'];
+  } else {
+    const s = new Set(fcCfg.doms.filter(x=>x!=='all'));
+    s.has(v)?s.delete(v):s.add(v);
+    fcCfg.doms = s.size ? [...s] : ['all'];
+  }
+  row.querySelectorAll('button').forEach(b=>b.classList.toggle('sel-multi', fcCfg.doms.includes(b.dataset.v)));
+  fcUpdateCount();
+});
+
+// ordem (seleção única)
+document.getElementById('fc-order').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  e.target.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
+  e.target.classList.add('sel');
+  fcCfg.order = e.target.dataset.v;
+});
+
+function startFlash(){
+  let pool = fcPool();
+  if(!pool.length) return;
+  pool = fcCfg.order==='shuffle' ? shuffle([...pool]) : [...pool].sort((a,b)=>a.id-b.id);
+  deck = pool; fi=0; fcMarks={};
+  document.getElementById('fc-setup').style.display='none';
+  document.getElementById('fc-result').style.display='none';
+  document.getElementById('fc-study').style.display='block';
+  renderCard();
+}
+
+function renderCard(){
+  const c = deck[fi], d = DOMS[c.dom];
+  document.getElementById('fc-prog').style.width = ((fi+1)/deck.length*100)+'%';
+  document.getElementById('fc-counter').textContent = `Card ${fi+1} de ${deck.length}`;
+  document.getElementById('fc-domtag').innerHTML = `<span class="pill" style="background:${d.color}22;color:${d.color};border:1px solid ${d.color}55">${c.dom} · ${d.name}</span>`;
+  document.getElementById('fc-card').classList.remove('flipped');
+  document.getElementById('fc-hint').textContent = 'Clique no card para virar';
+  document.getElementById('fc-front-label').textContent = 'Conceito · ' + c.t;
+  document.getElementById('fc-front').textContent = c.f;
+  document.getElementById('fc-back-ans').textContent = c.k;
+  document.getElementById('fc-back-rat').textContent = c.b;
+  const link = document.getElementById('fc-back-link');
+  link.href = d.url;
+  link.style.color = d.color;
+  const m = fcMarks[c.id];
+  document.getElementById('fc-know').classList.toggle('on', m==='know');
+  document.getElementById('fc-review').classList.toggle('on', m==='review');
+  document.getElementById('fc-prev').disabled = fi===0;
+  document.getElementById('fc-next').textContent = fi===deck.length-1 ? '✓' : '›';
+}
+
+function flipCard(){
+  const c = document.getElementById('fc-card');
+  c.classList.toggle('flipped');
+  document.getElementById('fc-hint').textContent = c.classList.contains('flipped') ? 'Clique para ver a pergunta' : 'Clique no card para virar';
+}
+
+function markCard(type){
+  const q = deck[fi];
+  fcMarks[q.id] = fcMarks[q.id]===type ? undefined : type;
+  document.getElementById('fc-know').classList.toggle('on', fcMarks[q.id]==='know');
+  document.getElementById('fc-review').classList.toggle('on', fcMarks[q.id]==='review');
+  if(fcMarks[q.id] && fi<deck.length-1) setTimeout(()=>navCard(1), 200);
+}
+
+function navCard(dir){
+  const next = fi+dir;
+  if(next<0) return;
+  if(next>=deck.length) return finishFlash();
+  fi=next; renderCard();
+}
+
+function finishFlash(){
+  document.getElementById('fc-study').style.display='none';
+  document.getElementById('fc-result').style.display='block';
+  const know = Object.values(fcMarks).filter(m=>m==='know').length;
+  const review = Object.values(fcMarks).filter(m=>m==='review').length;
+  document.getElementById('fc-res-score').textContent = `${know}/${deck.length}`;
+  document.getElementById('fc-res-score').style.color = 'var(--green)';
+  document.getElementById('fc-res-sub').textContent = `Você marcou ${know} como "já sei" e ${review} para revisar.`;
+  const again = document.getElementById('fc-res-again');
+  if(review>0){ again.textContent = `↻ Revisar os ${review} marcados`; again.onclick = reviewDeck; again.style.display='inline-block'; }
+  else again.style.display='none';
+}
+
+function reviewDeck(){
+  const ids = new Set(Object.keys(fcMarks).filter(k=>fcMarks[k]==='review').map(Number));
+  deck = deck.filter(q=>ids.has(q.id));
+  if(fcCfg.order==='shuffle') deck = shuffle(deck);
+  fi=0; fcMarks={};
+  document.getElementById('fc-result').style.display='none';
+  document.getElementById('fc-study').style.display='block';
+  renderCard();
+}
+
+function quitFlash(){
+  document.getElementById('fc-study').style.display='none';
+  document.getElementById('fc-result').style.display='none';
+  document.getElementById('fc-setup').style.display='block';
+  fcUpdateCount();
+}
+
+// navegação por teclado (setas / espaço) quando na aba flash
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('tab-flash').classList.contains('active')) return;
+  if(document.getElementById('fc-study').style.display==='none') return;
+  if(e.key==='ArrowRight') navCard(1);
+  else if(e.key==='ArrowLeft') navCard(-1);
+  else if(e.key===' ' || e.key==='Enter'){ e.preventDefault(); flipCard(); }
+});
+fcUpdateCount();
 
 // ---------- tabs ----------
 document.querySelectorAll('nav button').forEach(b=>{
