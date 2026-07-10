@@ -139,15 +139,15 @@ details.tema .body{padding:0 20px 18px;border-top:1px solid var(--border)}
 </header>
 
 <nav>
-  <button class="active" data-tab="mental">🧠 Modelo Mental</button>
-  <button data-tab="cheat">⚡ Cheatsheet</button>
-  <button data-tab="temas">📚 Resumo por Tema</button>
+  <button class="active" data-tab="temas">📚 Resumo por Tema</button>
   <button data-tab="flash">🃏 Flash Cards</button>
   <button data-tab="sim">🎯 Simulado</button>
+  <button data-tab="cheat">⚡ Cheatsheet</button>
+  <button data-tab="mental">🧠 Modelo Mental</button>
 </nav>
 
 <!-- ============ MODELO MENTAL ============ -->
-<div class="tab active" id="tab-mental">
+<div class="tab" id="tab-mental">
   <div class="card">
     <h3>🔑 A pergunta-mestra do exame</h3>
     <p>Quase toda questão apresenta um <b>cenário de produção com um sintoma</b> e pede a causa raiz ou a melhor correção. A resposta certa quase sempre responde a:</p>
@@ -310,7 +310,7 @@ details.tema .body{padding:0 20px 18px;border-top:1px solid var(--border)}
 </div>
 
 <!-- ============ TEMAS ============ -->
-<div class="tab" id="tab-temas">
+<div class="tab active" id="tab-temas">
   <p class="muted small" style="margin-bottom:14px">Os 5 domínios oficiais do exame, com peso, síntese dos conceitos cobrados nas questões analisadas e as pegadinhas típicas de cada um. Clique para expandir.</p>
   <div id="temas-list"></div>
 </div>
